@@ -8,6 +8,10 @@ x = discord.PartialEmoji(name="❌")
 team_member_role_id = 733012839823966328
 
 
+def safify(msg):
+    return msg.replace("~", "\\~").replace("|", "\\|").replace("*", "\\*").replace("_", "\\_")
+
+
 class CommandsCog(Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -45,7 +49,7 @@ class CommandsCog(Cog):
                 "url": embed.url,
                 "footer": embed.footer.text,
                 "thumbnail": embed.thumbnail.url,
-                "description": embed.description + f"\n\n__**Staff member**__: {payload.member.display_name}",
+                "description": embed.description + f"\n\n__**Staff member**__: {safify(payload.member.display_name)}",
                 "author": {"name": embed.author.name, "icon_url": embed.author.icon_url}
             }
             embed = self.bot.make_application_embed_processed(embed_dict, rejected=False)
@@ -118,8 +122,8 @@ class CommandsCog(Cog):
             "url": embed.url,
             "footer": embed.footer.text,
             "thumbnail": embed.thumbnail.url,
-            "description": embed.description + f"\n\n__**Staff member**__: {ctx.message.author.display_name}\n__"
-                                               f"**Reason**__: {' '.join(reason)}",
+            "description": embed.description + f"\n\n__**Staff member**__: {safify(ctx.message.author.display_name)}\n__"
+                                               f"**Reason**__: {safify(' '.join(reason))}",
             "author": {"name": embed.author.name, "icon_url": embed.author.icon_url}
         }
         print(embed_dict)
@@ -131,8 +135,9 @@ class CommandsCog(Cog):
         channel = user.dm_channel
         if channel is None:
             channel = await user.create_dm()
-        await channel.send(f"Your application has been rejected for the following reason:`{' '.join(reason)}`.Feel "
-                           f"free to make a new one with the corrected changes")
+        await channel.send(
+            f"Your application has been rejected for the following reason:`{safify(' '.join(reason))}`.Feel "
+            f"free to make a new one with the corrected changes")
         await message.delete()
         self.bot.whitelist[user_id]["status"] = "rejected"
         self.bot.whitelist.save_file()

@@ -19,6 +19,10 @@ logging.getLogger().addHandler(logging.StreamHandler())
 logger = logging.getLogger("bot - main")
 
 
+def safify(msg):
+    return msg.replace("~", "\\~").replace("|", "\\|").replace("*", "\\*").replace("_", "\\_")
+
+
 class Config:
     def __init__(self):
         self.conf_path = Path(__file__).parent / "bot.conf"
@@ -227,7 +231,7 @@ class DiscordBot(Bot):
         if len(checks) != len(error_checks):
             raise IndexError
 
-        await channel.send("Next question. "+question)
+        await channel.send("Next question. " + question)
         # loop here to get a valid age.
         faulty = True
         while faulty:
@@ -239,7 +243,7 @@ class DiscordBot(Bot):
             # check if the input is valid
             faulty = len(result) != numbers or not all([check(result) for check in checks])
             print(not all([check(result) for check in checks]))
-            print(len(result)!= numbers)
+            print(len(result) != numbers)
             if faulty:
                 # if no number found
                 if len(result) == 0:
@@ -251,7 +255,8 @@ class DiscordBot(Bot):
                                        f"{'a' if numbers == 1 else str(numbers)} number{'' if numbers == 1 else 's'}.")
                 # if the input isn't what the question is asking for
                 else:
-                    await channel.send(f"answer not valid: {error_checks[[check(result) for check in checks].index(False)]}")
+                    await channel.send(
+                        f"answer not valid: {error_checks[[check(result) for check in checks].index(False)]}")
         return result
 
     async def boolean_question(self, question, channel, user):
@@ -296,7 +301,7 @@ class DiscordBot(Bot):
         """
         title = f"""{user_dict['author']["name"]}'s (Minecraft character: {user_dict['name']}) application"""
         description = f"""
-__**Minecraft Name**__: {user_dict["name"]}
+__**Minecraft Name**__: {safify(user_dict["name"])}
 
 __**Age**__: {user_dict["age"][0]}
 
@@ -304,13 +309,13 @@ __**Has read and understood rules?**__: {":white_check_mark:" if user_dict["read
 
 __**Has agreed to be punished/banned if they break the rules?**__: {":white_check_mark:" if user_dict["punishment"] else ":x:"} 
 
-__**Ban history**__: {user_dict["ban"]}
+__**Ban history**__: {safify(user_dict["ban"])}
 
-__**Where did they hear about the pack**__: {user_dict["referal"]}
+__**Where did they hear about the pack**__: {safify(user_dict["referal"])}
 
-__**A bit about theirselves (3 sentences min)**__: {user_dict["personality"]}
+__**A bit about theirselves (3 sentences min)**__: {safify(user_dict["personality"])}
 
-__**Discord id**__: {user_dict["author"]["id"]}
+__**Discord id**__: {safify(user_dict["author"]["id"])}
 
 """
 
