@@ -315,7 +315,7 @@ __**Where did they hear about the pack**__: {safify(user_dict["referal"])}
 
 __**A bit about theirselves (3 sentences min)**__: {safify(user_dict["personality"])}
 
-__**Discord id**__: {safify(user_dict["author"]["id"])}
+__**Discord id**__: {user_dict["author"]["id"]}
 
 """
 
