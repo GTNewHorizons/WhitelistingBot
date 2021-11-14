@@ -1,3 +1,5 @@
 /whitelisted_players.json
 /bot.conf
 /bot.log
+/.idea
+/__pycache__

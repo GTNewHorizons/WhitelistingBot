@@ -136,6 +136,7 @@ class CommandsCog(Cog):
         await message.delete()
         self.bot.whitelist[user_id]["status"] = "rejected"
         self.bot.whitelist.save_file()
+        await ctx.message.delete()
 
     def get_id_from_embed_app(self, embed):
         pattern = re.compile(": ([0-9]+)\n\n")
