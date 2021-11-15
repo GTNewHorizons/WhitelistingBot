@@ -30,19 +30,22 @@ class CommandsCog(Cog):
 
     @Cog.listener("on_raw_reaction_add")
     async def _reaction_listener(self, payload):
-        print(payload)
+
         if payload.member == self.bot.user or int(payload.channel_id) != int(self.bot.config["pending_app"]):
             return
+        print(payload)
         message = await self.bot.get_guild(payload.guild_id).get_channel(payload.channel_id).fetch_message(
             payload.message_id)
         if len(message.embeds) == 0:
             return
         embed = message.embeds[0]
-
+        print(embed.description)
         if payload.emoji == x:
-            await message.channel.send(
+            cmd = await message.channel.send(
                 f"use `!app_reason {payload.guild_id} {payload.channel_id} {payload.message_id} <reason>` to reject "
                 f"the app")
+            asyncio.sleep(15)
+            cmd.delete()
         elif payload.emoji == white_check_mark:
             embed_dict = {
                 "title": embed.title,
@@ -53,9 +56,11 @@ class CommandsCog(Cog):
                 "author": {"name": embed.author.name, "icon_url": embed.author.icon_url}
             }
             embed = self.bot.make_application_embed_processed(embed_dict, rejected=False)
+
             await self.bot.send_validated(embed)
             user_id = int(self.get_id_from_embed_app(embed))
             user = self.bot.get_user(user_id)
+            print(user_id)
             channel = user.dm_channel
             self.bot.whitelist[user_id]["status"] = "approved"
             self.bot.whitelist.save_file()
@@ -144,7 +149,7 @@ class CommandsCog(Cog):
         await ctx.message.delete()
 
     def get_id_from_embed_app(self, embed):
-        pattern = re.compile(": ([0-9]+)\n\n")
+        pattern = re.compile("__\*\*Discord id\*\*__: ([0-9]+)")
         return re.findall(pattern, embed.description)[0]
 
     def get_username_from_embed_app(self, embed):
