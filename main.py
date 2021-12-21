@@ -464,6 +464,7 @@ __**Discord id**__: {user_dict["author"]["id"]}
         for channel_id in self.config["console channels"]:
             guild = self.get_guild(int(self.config["guild_id"]))
             channel = guild.get_channel(channel_id)
+            username = username.replace("\\_", "_").replace("\_", "_")
             await channel.send(f"whitelist add {username}")
 
 
