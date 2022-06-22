@@ -469,5 +469,5 @@ __**Discord id**__: {user_dict["author"]["id"]}
 
 
 if __name__ == "__main__":
-    bot = DiscordBot()
+    bot = DiscordBot(help_command=None)
     bot.run()
