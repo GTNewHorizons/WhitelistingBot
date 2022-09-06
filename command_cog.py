@@ -41,11 +41,17 @@ class CommandsCog(Cog):
         embed = message.embeds[0]
         print(embed.description)
         if payload.emoji == x:
+            # if it cannot remove the reaction, ignore it
+            try:
+                await message.remove_reaction(x, payload.member)
+            except BaseException:
+                pass
+
             cmd = await message.channel.send(
                 f"use `!app_reason {payload.guild_id} {payload.channel_id} {payload.message_id} <reason>` to reject "
                 f"the app")
-            asyncio.sleep(15)
-            cmd.delete()
+            await cmd.delete(delay=60)
+
         elif payload.emoji == white_check_mark:
             embed_dict = {
                 "title": embed.title,
