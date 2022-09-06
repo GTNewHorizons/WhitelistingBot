@@ -29,7 +29,7 @@ def check_3_sentences(msg:str)-> bool:
     :param msg: the message
     :return: yes if there is 3 sentences.
     """
-    return msg.count('.') == 3
+    return msg.count('.') >= 3
 
 class Config:
     def __init__(self):
