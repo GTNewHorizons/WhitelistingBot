@@ -22,6 +22,14 @@ logger = logging.getLogger("bot - main")
 def safify(msg):
     return msg.replace("~", "\\~").replace("|", "\\|").replace("*", "\\*").replace("_", "\\_")
 
+def check_3_sentences(msg:str)-> bool:
+    """
+    Checks if the message has at least 3 sentence.
+
+    :param msg: the message
+    :return: yes if there is 3 sentences.
+    """
+    return msg.count('.') == 3
 
 class Config:
     def __init__(self):
@@ -239,7 +247,7 @@ class DiscordBot(Bot):
         if len(checks) != len(error_checks):
             raise IndexError
 
-        await channel.send("Next question. " + question)
+        await channel.send(question)
         # loop here to get a valid age.
         faulty = True
         while faulty:
@@ -277,7 +285,7 @@ class DiscordBot(Bot):
         """
         # check that will filter any message that is not from the user or that is not yes or no.
         check_yes_no = lambda message: message.author == user and message.content.upper() in ["YES", "NO"]
-        await channel.send("Next question. " + question + " Type YES or NO to validate.")
+        await channel.send(question + " Type YES or NO to validate.")
         msg = await super().wait_for("message", check=check_yes_no, timeout=self.TIMEOUT)
         return msg.content.upper() == "YES"
 
@@ -289,10 +297,10 @@ class DiscordBot(Bot):
         :param user: the user.
         :return: str
         """
-        validated = False
+
         result = []
-        await channel.send("Next question. " + question + " Type NEXT to validate.")
-        while not validated:
+        await channel.send(question + " Type NEXT to validate.")
+        while True:
             msg = await super().wait_for("message", check=lambda message: message.author == user, timeout=self.TIMEOUT)
             if "NEXT" in msg.content.upper():
                 if len(msg.content) != len("NEXT"):
@@ -386,14 +394,26 @@ __**Discord id**__: {user_dict["author"]["id"]}
                     "question": "Do you agree that, if you ever violate the rules, you will be punished or banned?",
                     "type": "boolean"},
                 "ban": {
-                    "question": "Did you get ever banned? If yes please explain. (if you never get banned, "
-                                "please write it)",
-                    "type": "free"},
-                "referal": {"question": "Where did you heard of GT:NH?", "type": "free"},
+                    "question": "Did you get ever banned? If yes please explain.",
+                    "type": "free",
+                    "check": None,
+                    "on_check_error": None
+                },
+                "referal": {
+                    "question": "Where did you heard of GT:NH?",
+                    "type": "free",
+                    "check":None,
+                    "on_error_check":None
+                },
                 "personality": {
                     "question": "Please tell us a bit about yourself __**outside of Minecraft in minimum 3 "
                                 "sentences**__ (hobbies, personality..) ",
-                    "type": "free"}
+                    "type": "free",
+                    "check": check_3_sentences,
+                    "on_check_error": lambda: asyncio.ensure_future(
+                        channel.send("Looks like your text isn't at least 3 sentences. Friendly reminder: a sentence "
+                                     "starts with a capital letter and ends with a dot."))
+                }
             }
 
             self.whitelist[user.id] = current_user
@@ -401,8 +421,20 @@ __**Discord id**__: {user_dict["author"]["id"]}
                 current_user["name"], current_user["uuid"] = await self.question_name(channel, user)
 
                 for question_title, question in question_list.items():
+                    await channel.send("Next question:")
                     if question["type"] == "free":
-                        current_user[question_title] = await self.free_question(question["question"], channel, user)
+                        loop = True
+                        while loop:
+                            text = await self.free_question(question["question"], channel, user)
+                            if question["check"] is None:
+                                loop=False
+                            else:
+                                if question["check"](text):
+                                    loop = False
+                                else:
+                                    await question["on_check_error"]()
+
+                        current_user[question_title] = text
                     elif question["type"] == "boolean":
                         current_user[question_title] = await self.boolean_question(question["question"], channel, user)
                     elif question["type"] == "integer":
@@ -421,11 +453,29 @@ __**Discord id**__: {user_dict["author"]["id"]}
                                    "process.")
                 return
 
-            self.whitelist[user.id] = current_user
             embed = self.make_application_embed_pending(current_user)
-            await channel.send(embed=embed)
+            await channel.send("this is the application you have made:", embed=embed)
+
+            if not current_user["read rules"]:
+                await channel.send("Unfortunately, we require any player to know our rules. "
+                             "Your application will not be transmitted. If this is a mistake, start the whitelisting "
+                             "process again by sending me a new message.")
+                del self.whitelist[user.id]
+                return
+
+            if not current_user["punishment"]:
+                await channel.send("Unfortunately, you have to accept that breaking a rule have consequences on the server. "
+                             "Your application will not be transmitted. If this is a mistake, start the whitelisting "
+                             "process again by sending me a new message.")
+                del self.whitelist[user.id]
+                return
+
+
+            self.whitelist[user.id] = current_user
             await self.send_pending(embed)
             self.whitelist.save_file()
+            await channel.send("Your application has been sent for review. __**Please wait at least 24h before asking "
+                               "about any update on your application. Sometimes we are all busy.**__")
 
     async def send_pending(self, embed):
         """
