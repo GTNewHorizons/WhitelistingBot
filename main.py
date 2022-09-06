@@ -199,17 +199,25 @@ class DiscordBot(Bot):
         """
 
         await channel.send(
-            "__**Disclamer: I am experimental. If you have an issue with me, report it to boubou_19#2706."
-            "Any attempt to break me will get you in trouble, according to the mood of boubou_19.**__"
-            "Hey! I'm going to help you apply for the GTNH official servers whitelist."
-            "First I need your minecraft character name.")
+            "Hey! I'm going to help you apply for the GTNH official servers whitelist. If you have an issue with me,"
+            " report it to boubou_19#2706. __**Any attempt to break me will get you in trouble, according to the mood "
+            "of boubou_19. If you don't answer one of the questions within 10 mins, the whitelisting process will stop"
+            ".**__ First I need your minecraft character name.")
 
         # loop here until we get a valid name. We can't prevent the user from applying with an account he doesn't own :(
         faulty = True
         while faulty:
             msg = await super().wait_for("message", check=lambda message: message.author == user, timeout=self.TIMEOUT)
+
+            # for when the user reaches the timeout but still send one answer, triggering the bot then type next
+            if msg.content.lower() == "next":
+                await channel.send(f"I doubt your character is named {msg.content.lower()}. "
+                                   "Please enter your real name")
+                continue
+
             res = requests.get(f'https://api.mojang.com/users/profiles/minecraft/{msg.content}')
-            faulty = not res.status_code == 200
+            faulty = res.status_code != 200
+
             if faulty:
                 await channel.send(f"looks like i can't find you on Mojang's API. Be sure to have "
                                    f"typed your name correctly, and only your name")
@@ -408,6 +416,9 @@ __**Discord id**__: {user_dict["author"]["id"]}
                 current_user["date"] = f"{datetime.datetime.now().strftime('%b %d %Y %H:%M:%S')} GMT+1"
             except asyncio.exceptions.TimeoutError:
                 del self.whitelist[user.id]
+                await channel.send("It has been more than 10 mins since i received any sign of life from you, aborting "
+                                   "the whitelisting process. Resend me a message to start again the whitelisting "
+                                   "process.")
                 return
 
             self.whitelist[user.id] = current_user
