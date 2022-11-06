@@ -383,6 +383,7 @@ __**Discord id**__: {user_dict["author"]["id"]}
             if self.config["whitelists_closed"]:
                 await channel.send("**__Saddly, we have too much players currently, so to guarantee server stability for everyone, "
                                    "we chose to close the whitelisting process. For more information, check #announcements in our discord server__**")
+                return
 
             user = message.author
             current_user = {"author": {"name": user.display_name,
