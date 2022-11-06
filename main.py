@@ -41,7 +41,8 @@ class Config:
             "validated_app": 905623845409542205,
             "rejected_app": 905623802921230387,
             "pending_app": 905623774618071110,
-            "console channels": [905644966901076051]
+            "console channels": [905644966901076051],
+            "whitelists_closed": False
         }
 
         self.config = {}
@@ -372,10 +373,18 @@ __**Discord id**__: {user_dict["author"]["id"]}
 
         # on DMs
         else:
+            channel = message.channel
+            
+            #if server is full
+            if self.config["whitelists_closed"]:
+                await channel.send("**__Saddly, we have too much players currently, so to guarantee server stability for everyone, "
+                                   "we chose to close the whitelisting process. For more information, check #announcements in our discord server__**")
+
+
             if message.author == super().user or (
                     message.author.id in self.whitelist and self.whitelist[message.author.id]["status"] != "rejected"):
                 return
-            channel = message.channel
+
             user = message.author
             current_user = {"author": {"name": user.display_name,
                                        "id": user.id,
