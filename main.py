@@ -373,17 +373,16 @@ __**Discord id**__: {user_dict["author"]["id"]}
 
         # on DMs
         else:
+            if message.author == super().user or (
+                    message.author.id in self.whitelist and self.whitelist[message.author.id]["status"] != "rejected"):
+                return
+
             channel = message.channel
-            
+
             #if server is full
             if self.config["whitelists_closed"]:
                 await channel.send("**__Saddly, we have too much players currently, so to guarantee server stability for everyone, "
                                    "we chose to close the whitelisting process. For more information, check #announcements in our discord server__**")
-
-
-            if message.author == super().user or (
-                    message.author.id in self.whitelist and self.whitelist[message.author.id]["status"] != "rejected"):
-                return
 
             user = message.author
             current_user = {"author": {"name": user.display_name,
