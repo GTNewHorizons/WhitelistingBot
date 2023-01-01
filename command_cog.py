@@ -1,11 +1,14 @@
 import discord
 from discord.ext.commands.cog import Cog
 import re
+import json
+from pathlib import Path
 
 white_check_mark = discord.PartialEmoji(name="✅")
 x = discord.PartialEmoji(name="❌")
 # radioactive = discord.PartialEmoji(name="☢")
 team_member_role_id = 733012839823966328
+stats_path = Path(__file__).parent / "info.json"
 
 
 def safify(msg):
@@ -167,6 +170,17 @@ class CommandsCog(Cog):
         self.bot.whitelist.load_file()
         await ctx.send("data successfully reloaded.")
 
+    @discord.ext.commands.command(name="stats_users")
+    @discord.ext.commands.guild_only()
+    @discord.ext.commands.has_role(team_member_role_id)
+    async def _member_rank(self, ctx):
+        await ctx.send("generating statistics...")
+        L = [m for m in ctx.guild.members if m.joined_at is not None]
+        L.sort(key=lambda x: x.joined_at)
+        L2 = [(L[i].joined_at.isoformat(), i+1, L[i].name, L[i].id) for i in range(len(L))]
+        with open(stats_path, "w") as file:
+            json.dump(L2, file)
+        await ctx.send("statistics generated.")
 
 def setup(bot):
     bot.add_cog(CommandsCog(bot))
