@@ -8,7 +8,7 @@ white_check_mark = discord.PartialEmoji(name="✅")
 x = discord.PartialEmoji(name="❌")
 # radioactive = discord.PartialEmoji(name="☢")
 team_member_role_id = 733012839823966328
-stats_path = Path(__file__).parent / "info.json"
+stats_path = Path(__file__).parent.parent / "info.json"
 
 
 def safify(msg):

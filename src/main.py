@@ -10,7 +10,7 @@ import datetime
 from discord.ext.commands import Bot
 import asyncio
 
-logging.basicConfig(filename=Path(os.getcwd()) / 'bot.log',
+logging.basicConfig(filename=Path(os.getcwd()) / ".."/ 'bot.log',
                     filemode='a',
                     format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
                     level=logging.INFO)
@@ -33,7 +33,7 @@ def check_3_sentences(msg:str)-> bool:
 
 class Config:
     def __init__(self):
-        self.conf_path = Path(__file__).parent / "bot.conf"
+        self.conf_path = Path(__file__).parent.parent / "bot.conf"
         self.base_config = {
             "token": None,
             "guild_id": None,
@@ -112,7 +112,7 @@ class Config:
 
 class WhitelistedPlayers:
     def __init__(self):
-        self.file_path = Path(__file__).parent / "whitelisted_players.json"
+        self.file_path = Path(__file__).parent.parent / "whitelisted_players.json"
         self.whitelist = dict()
         self.load_file()
 
