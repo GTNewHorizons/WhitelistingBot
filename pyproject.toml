@@ -1,10 +1,10 @@
 [tool.poetry]
 name = "nh-whitelister"
 version = "1.0.0"
-description = ""
+description = "Whitelisting bot for the officials"
 authors = ["boubou19 <miisterunknown@gmail.com>"]
 readme = "README.md"
-packages = [{include = "project_template"}]
+packages = [{include = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
