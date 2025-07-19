@@ -6,10 +6,11 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Any, List
+from typing import Any, List, Tuple, Dict
 
 import discord
 import requests
+from discord import Member, TextChannel, User
 from discord.ext.commands import Bot
 
 from question import Question, QuestionType
@@ -22,7 +23,7 @@ logging.getLogger().addHandler(logging.StreamHandler())
 logger = logging.getLogger("bot - main")
 
 
-def safify(msg):
+def safify(msg:str) -> str:
     return msg.replace("~", "\\~").replace("|", "\\|").replace("*", "\\*").replace("_", "\\_")
 
 
@@ -37,8 +38,8 @@ def check_3_sentences(msg: str) -> bool:
 
 
 class Config:
-    def __init__(self):
-        self.conf_path = Path(__file__).parent.parent / "bot.conf"
+    def __init__(self) -> None:
+        self.conf_path: Path = Path(__file__).parent.parent / "bot.conf"
         self.base_config = {
             "token": None,
             "guild_id": None,
@@ -50,14 +51,14 @@ class Config:
             "whitelists_closed": False,
         }
 
-        self.config = {}
+        self.config:Dict[str, Any] = {}
 
         self.load_config()
 
-    def __getitem__(self, item):
+    def __getitem__(self, item:str) -> Any:
         return self.config[item]
 
-    def load_config(self):
+    def load_config(self)->None:
         """
         Load the config
         :return: None
@@ -97,14 +98,14 @@ class Config:
         self.config = loaded_conf
         logger.info("config loaded successfully.")
 
-    def create_config(self):
+    def create_config(self)->None:
         """
         write the default config to the config file.
         :return: None
         """
         json.dump(self.base_config, open(self.conf_path, "w"))
 
-    def save_config(self, config):
+    def save_config(self, config:Dict[str, Any])->None:
         """
         save the config into the config file.
         :param config: a dict representing the config entries.
@@ -114,38 +115,38 @@ class Config:
 
 
 class WhitelistedPlayers:
-    def __init__(self):
+    def __init__(self)->None:
         self.file_path = Path(__file__).parent.parent / "whitelisted_players.json"
-        self.whitelist = dict()
+        self.whitelist: Dict[Any, Any] = dict()
         self.load_file()
 
-    def __getitem__(self, item):
+    def __getitem__(self, item:Any)->Any:
         if item is not str:
             item = str(item)
         return self.whitelist[item]
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key:Any, value:Any)->None:
         if key is not str:
             key = str(key)
         self.whitelist[key] = value
 
-    def __delitem__(self, key):
+    def __delitem__(self, key:Any)->None:
         if key is not str:
             key = str(key)
         del self.whitelist[key]
 
-    def __contains__(self, key):
+    def __contains__(self, key:Any)->bool:
         if key is not str:
             key = str(key)
         return key in self.whitelist
 
-    def __repr__(self):
+    def __repr__(self)->str:
         return self.__str__()
 
-    def __str__(self):
+    def __str__(self)->str:
         return str(self.whitelist)
 
-    def load_file(self):
+    def load_file(self)->None:
         """
         Load the file
         :return: None
@@ -160,14 +161,14 @@ class WhitelistedPlayers:
         logger.info("already whitelisted players file loaded successfully.")
         logger.info(self.whitelist)
 
-    def create_file(self):
+    def create_file(self)->None:
         """
         write the default config to the config file.
         :return: None
         """
         json.dump({}, open(self.file_path, "w"))
 
-    def save_file(self):
+    def save_file(self)->None:
         """
         save the whitelisted players into file.
         :return:
@@ -180,7 +181,7 @@ class DiscordBot(Bot):
     Discord bot written by boubou_19 for the GTNH Team.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args:Any, **kwargs:Any)->None:
         intents = discord.Intents.default()
         intents.members = True
         Bot.__init__(self, command_prefix="!", intents=intents, *args, **kwargs)
@@ -188,10 +189,10 @@ class DiscordBot(Bot):
         self.whitelist = WhitelistedPlayers()
         self.QUESTIONS = 10
         self.TIMEOUT = 300
-        self.current_users = dict()
+        self.current_users:Dict[Any, Any] = dict()
         self.load_extension("command_cog")
 
-    async def on_ready(self):
+    async def on_ready(self) -> None:
         """
         Method called when the bot has become online.
         :return: None
@@ -199,10 +200,10 @@ class DiscordBot(Bot):
         logger.info("logged in as {0.user}".format(self))
         activity_text = self.config["bot_activity"]
 
-        await super().change_presence(activity=discord.Game(activity_text), status=discord.client.Status.dnd)
+        await super().change_presence(activity=discord.Game(activity_text), status=discord.enums.Status.dnd)
         logger.info(f"set activity to {activity_text}.")
 
-    async def question_name(self, channel, user):
+    async def question_name(self, channel: discord.abc.Messageable, user: User | Member) -> Tuple[str, str]:
         """
         Method to ask the username of the player on minecraft.
         :param channel: The DM channel used to talk to the user
@@ -232,11 +233,13 @@ class DiscordBot(Bot):
 
             if faulty:
                 await channel.send(f"looks like i can't find you on Mojang's API. Be sure to have " f"typed your name correctly, and only your name")
-            else:
-                res = res.json()
-                return res["name"], res["id"]
 
-    async def int_question(self, question, channel, user):
+        res = res.json()
+        name: str = res["name"]
+        uuid: str = res["id"]
+        return name, uuid
+
+    async def int_question(self, question: str, channel: discord.abc.Messageable, user: User | Member) -> List[str]:
         """
         Helper function to ask about a integer question.
         :param question: question to ask.
@@ -253,7 +256,7 @@ class DiscordBot(Bot):
 
         return result
 
-    async def boolean_question(self, question, channel, user):
+    async def boolean_question(self, question: str, channel: discord.abc.Messageable, user: User | Member) -> bool:
         """
         Helper function to ask for a boolean question.
         :param question: question to ask
@@ -265,9 +268,9 @@ class DiscordBot(Bot):
         check_yes_no = lambda message: message.author == user and message.content.upper() in ["YES", "NO"]
         await channel.send(question + " Type YES or NO to validate.")
         msg = await super().wait_for("message", check=check_yes_no, timeout=self.TIMEOUT)
-        return msg.content.upper() == "YES"
+        return msg.content.upper() == "YES"  # type: ignore
 
-    async def free_question(self, question, channel, user):
+    async def free_question(self, question: str, channel: discord.abc.Messageable, user: User | Member) -> str:
         """
         Helper function to ask for an open question.
         :param question: question to ask
@@ -287,7 +290,7 @@ class DiscordBot(Bot):
             else:
                 result.append(msg.content)
 
-    def make_application_embed_pending(self, user_dict):
+    def make_application_embed_pending(self, user_dict: Any) -> discord.Embed:
         """
         method to build a pending embed from a dictionnary containing the pending informations
         :param user_dict: dictionary containing the pending informations
@@ -317,12 +320,14 @@ __**Discord id**__: {user_dict["author"]["id"]}
         url = f"https://mcuuid.net/?q={user_dict['name']}"
         embed = discord.Embed(title=title, url=url, description=description, color=color)
         user = super().get_user(user_dict["author"]["id"])
+        assert user
+        assert user.avatar
         embed.set_author(name=user.name, icon_url=user.avatar.url)
         embed.set_thumbnail(url=f"https://crafthead.net/avatar/{user_dict['uuid'].replace('-', '')}")
         embed.set_footer(text=f"application made the {user_dict['date']}")
         return embed
 
-    def make_application_embed_processed(self, embed_dict, rejected=True):
+    def make_application_embed_processed(self, embed_dict: Any, rejected: bool = True) -> discord.Embed:
         """
         method to build a pending embed from a dictionnary containing the informations
         :param embed_dict: dictionary containing the informations
@@ -336,7 +341,7 @@ __**Discord id**__: {user_dict["author"]["id"]}
         embed.set_footer(text=embed_dict["footer"])
         return embed
 
-    async def on_message(self, message: discord.Message):
+    async def on_message(self, message: discord.Message) -> None:
         """
         Method listening for the event "on_message". Here if it's a DM it starts the whitelisting app process,
         otherwise it process bot commands.
@@ -489,37 +494,37 @@ __**Discord id**__: {user_dict["author"]["id"]}
                 "about any update on your application. Sometimes we are all busy.**__"
             )
 
-    async def send_pending(self, embed):
+    async def send_pending(self, embed: discord.Embed) -> None:
         """
         Helper function to send an embed to the pending app channel
         :param embed: a discord Embed
         :return: None
         """
         guild = self.get_guild(int(self.config["guild_id"]))
-        channel = guild.get_channel(int(self.config["pending_app"]))
+        channel: TextChannel = guild.get_channel(int(self.config["pending_app"]))  # type: ignore
         await channel.send(embed=embed)
 
-    async def send_rejected(self, embed):
+    async def send_rejected(self, embed: discord.Embed) -> None:
         """
         Helper function to send an embed to the rejected app channel
         :param embed: a discord Embed
         :return: None
         """
         guild = self.get_guild(int(self.config["guild_id"]))
-        channel = guild.get_channel(int(self.config["rejected_app"]))
+        channel: TextChannel = guild.get_channel(int(self.config["rejected_app"]))  # type: ignore
         await channel.send(embed=embed)
 
-    async def send_validated(self, embed):
+    async def send_validated(self, embed: discord.Embed) -> None:
         """
         Helper function to send an embed to the approved app channel
         :param embed: a discord Embed
         :return: None
         """
         guild = self.get_guild(int(self.config["guild_id"]))
-        channel = guild.get_channel(int(self.config["validated_app"]))
+        channel: TextChannel = guild.get_channel(int(self.config["validated_app"]))  # type: ignore
         await channel.send(embed=embed)
 
-    def run(self, *args, **kwargs):
+    def run(self, *args: Any, **kwargs: Any) -> None:
         """
         function to run the bot
         :param args: Bot's *args
@@ -528,7 +533,7 @@ __**Discord id**__: {user_dict["author"]["id"]}
         """
         super().run(self.config["token"], *args, **kwargs)
 
-    async def send_whitelist_command(self, username):
+    async def send_whitelist_command(self, username: str) -> None:
         """
         Method used by the bot to post a whitelist add <username> in every console channel set in the config.
         :param username: minecraft username
@@ -536,7 +541,7 @@ __**Discord id**__: {user_dict["author"]["id"]}
         """
         for channel_id in self.config["console channels"]:
             guild = self.get_guild(int(self.config["guild_id"]))
-            channel = guild.get_channel(channel_id)
+            channel: TextChannel = guild.get_channel(channel_id)  # type: ignore
             username = username.replace("\\_", "_").replace("\_", "_")
             await channel.send(f"whitelist add {username}")
 
