@@ -19,6 +19,7 @@ colour = "^0.1.5"
 flake8-docstrings = "^1.7.0"
 pydantic = "^2.3.0"
 discord-py = "^2.5.2"
+types-requests = "^2.32.4.20250611"
 
 [tool.black]
 line-length = 160
