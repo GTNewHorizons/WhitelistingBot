@@ -417,6 +417,7 @@ __**Discord id**__: {user_dict["author"]["id"]}
             question_list: List[Question] = [age, read_rules, punishment, ban, referal, personality]
 
             self.whitelist[user.id] = current_user
+            has_already_timed_out: bool = False
             try:
                 current_user["name"], current_user["uuid"] = await self.question_name(channel, user)
 
@@ -449,12 +450,14 @@ __**Discord id**__: {user_dict["author"]["id"]}
 
                 current_user["date"] = f"{datetime.datetime.now().strftime('%b %d %Y %H:%M:%S')} GMT+1"
             except asyncio.exceptions.TimeoutError:
-                del self.whitelist[user.id]
-                await channel.send(
-                    "It has been more than 10 mins since i received any sign of life from you, aborting "
-                    "the whitelisting process. Resend me a message to start again the whitelisting "
-                    "process."
-                )
+                if not has_already_timed_out:
+                    has_already_timed_out = True
+                    del self.whitelist[user.id]
+                    await channel.send(
+                        "It has been more than 10 mins since i received any sign of life from you, aborting "
+                        "the whitelisting process. Resend me a message to start again the whitelisting "
+                        "process."
+                    )
                 return
 
             embed = self.make_application_embed_pending(current_user)
