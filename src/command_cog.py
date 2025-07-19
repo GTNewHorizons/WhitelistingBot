@@ -1,8 +1,9 @@
+import json
+import re
+from pathlib import Path
+
 import discord
 from discord.ext.commands.cog import Cog
-import re
-import json
-from pathlib import Path
 
 white_check_mark = discord.PartialEmoji(name="✅")
 x = discord.PartialEmoji(name="❌")
@@ -26,19 +27,16 @@ class CommandsCog(Cog):
 
     @Cog.listener("on_message")
     async def _post_reaction(self, message):
-        if message.guild and message.author == self.bot.user and len(message.embeds) == 1 and int(
-                message.channel.id) == int(self.bot.config["pending_app"]):
+        if message.guild and message.author == self.bot.user and len(message.embeds) == 1 and int(message.channel.id) == int(self.bot.config["pending_app"]):
             await message.add_reaction("✅")
             await message.add_reaction("❌")
 
     @Cog.listener("on_raw_reaction_add")
     async def _reaction_listener(self, payload):
-
         if payload.member == self.bot.user or int(payload.channel_id) != int(self.bot.config["pending_app"]):
             return
         print(payload)
-        message = await self.bot.get_guild(payload.guild_id).get_channel(payload.channel_id).fetch_message(
-            payload.message_id)
+        message = await self.bot.get_guild(payload.guild_id).get_channel(payload.channel_id).fetch_message(payload.message_id)
         if len(message.embeds) == 0:
             return
         embed = message.embeds[0]
@@ -50,9 +48,7 @@ class CommandsCog(Cog):
             except BaseException:
                 pass
 
-            cmd = await message.channel.send(
-                f"use `!app_reason {payload.guild_id} {payload.channel_id} {payload.message_id} <reason>` to reject "
-                f"the app")
+            cmd = await message.channel.send(f"use `!app_reason {payload.guild_id} {payload.channel_id} {payload.message_id} <reason>` to reject " f"the app")
             await cmd.delete(delay=60)
 
         elif payload.emoji == white_check_mark:
@@ -62,7 +58,7 @@ class CommandsCog(Cog):
                 "footer": embed.footer.text,
                 "thumbnail": embed.thumbnail.url,
                 "description": embed.description + f"\n\n__**Staff member**__: {safify(payload.member.display_name)}",
-                "author": {"name": embed.author.name, "icon_url": embed.author.icon_url}
+                "author": {"name": embed.author.name, "icon_url": embed.author.icon_url},
             }
             embed = self.bot.make_application_embed_processed(embed_dict, rejected=False)
 
@@ -77,8 +73,10 @@ class CommandsCog(Cog):
             await self.bot.send_whitelist_command(self.get_username_from_embed_app(embed))
             if channel is None:
                 channel = await user.create_dm()
-            await channel.send("Your application has been approved. You'll be whitelisted shortly. If you cannot join "
-                               "despite you received this message, contact a team member.")
+            await channel.send(
+                "Your application has been approved. You'll be whitelisted shortly. If you cannot join "
+                "despite you received this message, contact a team member."
+            )
 
         else:
             return
@@ -97,8 +95,7 @@ class CommandsCog(Cog):
         try:
             user_id = int(user_id)
         except ValueError:
-            await ctx.send(
-                f"user id not found. Correct synthax `{self.bot.command_prefix}block_user <user_id> [<reason>]`")
+            await ctx.send(f"user id not found. Correct synthax `{self.bot.command_prefix}block_user <user_id> [<reason>]`")
             return
 
         # parse ban reason
@@ -137,8 +134,8 @@ class CommandsCog(Cog):
             "footer": embed.footer.text,
             "thumbnail": embed.thumbnail.url,
             "description": embed.description + f"\n\n__**Staff member**__: {safify(ctx.message.author.display_name)}\n__"
-                                               f"**Reason**__: {safify(' '.join(reason))}",
-            "author": {"name": embed.author.name, "icon_url": embed.author.icon_url}
+            f"**Reason**__: {safify(' '.join(reason))}",
+            "author": {"name": embed.author.name, "icon_url": embed.author.icon_url},
         }
         print(embed_dict)
         embed = self.bot.make_application_embed_processed(embed_dict)
@@ -151,7 +148,8 @@ class CommandsCog(Cog):
             channel = await user.create_dm()
         await channel.send(
             f"Your application has been rejected for the following reason:`{safify(' '.join(reason))}`.Feel "
-            f"free to make a new one with the corrected changes")
+            f"free to make a new one with the corrected changes"
+        )
         await message.delete()
         self.bot.whitelist[user_id]["status"] = "rejected"
         self.bot.whitelist.save_file()
@@ -177,10 +175,11 @@ class CommandsCog(Cog):
         await ctx.send("generating statistics...")
         L = [m for m in ctx.guild.members if m.joined_at is not None]
         L.sort(key=lambda x: x.joined_at)
-        L2 = [(L[i].joined_at.isoformat(), i+1, L[i].name, L[i].id) for i in range(len(L))]
+        L2 = [(L[i].joined_at.isoformat(), i + 1, L[i].name, L[i].id) for i in range(len(L))]
         with open(stats_path, "w") as file:
             json.dump(L2, file)
         await ctx.send("statistics generated.")
+
 
 def setup(bot):
     bot.add_cog(CommandsCog(bot))

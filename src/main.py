@@ -1,19 +1,22 @@
-import logging
-from pathlib import Path
-import os
-import discord
-import json
-import sys
-import requests
-import re
-import datetime
-from discord.ext.commands import Bot
 import asyncio
+import datetime
+import json
+import logging
+import os
+import re
+import sys
+from pathlib import Path
+from typing import Any, List
 
-logging.basicConfig(filename=Path(os.getcwd()) / ".."/ 'bot.log',
-                    filemode='a',
-                    format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
-                    level=logging.INFO)
+import discord
+import requests
+from discord.ext.commands import Bot
+
+from question import Question, QuestionType
+
+logging.basicConfig(
+    filename=Path(os.getcwd()) / ".." / "bot.log", filemode="a", format="%(asctime)s - %(levelname)s - %(name)s - %(message)s", level=logging.INFO
+)
 
 logging.getLogger().addHandler(logging.StreamHandler())
 logger = logging.getLogger("bot - main")
@@ -22,14 +25,16 @@ logger = logging.getLogger("bot - main")
 def safify(msg):
     return msg.replace("~", "\\~").replace("|", "\\|").replace("*", "\\*").replace("_", "\\_")
 
-def check_3_sentences(msg:str)-> bool:
+
+def check_3_sentences(msg: str) -> bool:
     """
     Checks if the message has at least 3 sentence.
 
     :param msg: the message
     :return: yes if there is 3 sentences.
     """
-    return msg.count('.') >= 3
+    return msg.count(".") >= 3
+
 
 class Config:
     def __init__(self):
@@ -42,7 +47,7 @@ class Config:
             "rejected_app": 905623802921230387,
             "pending_app": 905623774618071110,
             "console channels": [905644966901076051],
-            "whitelists_closed": False
+            "whitelists_closed": False,
         }
 
         self.config = {}
@@ -60,9 +65,7 @@ class Config:
         # check if the config exists
         if not self.conf_path.exists():
             self.create_config()
-            logger.info(
-                "config not found. Created a config file. Please complete it and relaunch the bot. This program will "
-                "now exit.")
+            logger.info("config not found. Created a config file. Please complete it and relaunch the bot. This program will " "now exit.")
             sys.exit(0)
 
         # load the config file
@@ -193,8 +196,8 @@ class DiscordBot(Bot):
         Method called when the bot has become online.
         :return: None
         """
-        logger.info('logged in as {0.user}'.format(self))
-        activity_text = self.config['bot_activity']
+        logger.info("logged in as {0.user}".format(self))
+        activity_text = self.config["bot_activity"]
 
         await super().change_presence(activity=discord.Game(activity_text), status=discord.client.Status.dnd)
         logger.info(f"set activity to {activity_text}.")
@@ -211,7 +214,8 @@ class DiscordBot(Bot):
             "Hey! I'm going to help you apply for the GTNH official servers whitelist. If you have an issue with me,"
             " report it to boubou_19#2706. __**Any attempt to break me will get you in trouble, according to the mood "
             "of boubou_19. If you don't answer one of the questions within 10 mins, the whitelisting process will stop"
-            ".**__ First I need your minecraft character name.")
+            ".**__ First I need your minecraft character name."
+        )
 
         # loop here until we get a valid name. We can't prevent the user from applying with an account he doesn't own :(
         faulty = True
@@ -220,60 +224,33 @@ class DiscordBot(Bot):
 
             # for when the user reaches the timeout but still send one answer, triggering the bot then type next
             if msg.content.lower() == "next":
-                await channel.send(f"I doubt your character is named {msg.content.lower()}. "
-                                   "Please enter your real name")
+                await channel.send(f"I doubt your character is named {msg.content.lower()}. " "Please enter your real name")
                 continue
 
-            res = requests.get(f'https://api.mojang.com/users/profiles/minecraft/{msg.content}')
+            res = requests.get(f"https://api.mojang.com/users/profiles/minecraft/{msg.content}")
             faulty = res.status_code != 200
 
             if faulty:
-                await channel.send(f"looks like i can't find you on Mojang's API. Be sure to have "
-                                   f"typed your name correctly, and only your name")
+                await channel.send(f"looks like i can't find you on Mojang's API. Be sure to have " f"typed your name correctly, and only your name")
             else:
                 res = res.json()
                 return res["name"], res["id"]
 
-    async def int_question(self, question, channel, user, numbers=1, checks=[], error_checks=[]):
+    async def int_question(self, question, channel, user):
         """
         Helper function to ask about a integer question.
         :param question: question to ask.
         :param channel: the channel of the discussion.
         :param user: the user being asked the question.
-        :param numbers: the amount of numbers to ask
-        :param checks: the input check to validate the numbers
-        :param error_checks: the reason why the bot don't want to accept the numbers
         :return:
         """
-        if len(checks) != len(error_checks):
-            raise IndexError
-
         await channel.send(question)
-        # loop here to get a valid age.
-        faulty = True
-        while faulty:
-            # wait for a message from the user
-            msg = await super().wait_for("message", check=lambda message: message.author == user, timeout=self.TIMEOUT)
-            pattern = re.compile("-?[0-9]+")
-            result = re.findall(pattern, msg.content)
 
-            # check if the input is valid
-            faulty = len(result) != numbers or not all([check(result) for check in checks])
-            print(not all([check(result) for check in checks]))
-            print(len(result) != numbers)
-            if faulty:
-                # if no number found
-                if len(result) == 0:
-                    await channel.send(f"Please write "
-                                       f"{'a' if numbers == 1 else str(numbers)} number{'' if numbers == 1 else 's'}.")
-                # if the number amount doesn't match the number asked
-                elif len(result) != numbers:
-                    await channel.send(f"Ambiguous. Please exactly "
-                                       f"{'a' if numbers == 1 else str(numbers)} number{'' if numbers == 1 else 's'}.")
-                # if the input isn't what the question is asking for
-                else:
-                    await channel.send(
-                        f"answer not valid: {error_checks[[check(result) for check in checks].index(False)]}")
+        # wait for a message from the user
+        msg = await super().wait_for("message", check=lambda message: message.author == user, timeout=self.TIMEOUT)
+        pattern = re.compile("-?[0-9]+")
+        result = re.findall(pattern, msg.content)
+
         return result
 
     async def boolean_question(self, question, channel, user):
@@ -353,8 +330,7 @@ __**Discord id**__: {user_dict["author"]["id"]}
         :return: embed
         """
         color = 0xFF0000 if rejected else 0x00FF00
-        embed = discord.Embed(title=embed_dict["title"], description=embed_dict["description"], url=embed_dict["url"],
-                              color=color)
+        embed = discord.Embed(title=embed_dict["title"], description=embed_dict["description"], url=embed_dict["url"], color=color)
         embed.set_author(name=embed_dict["author"]["name"], icon_url=embed_dict["author"]["icon_url"])
         embed.set_thumbnail(url=embed_dict["url"])
         embed.set_footer(text=embed_dict["footer"])
@@ -373,118 +349,142 @@ __**Discord id**__: {user_dict["author"]["id"]}
 
         # on DMs
         else:
-            if message.author == super().user or (
-                    message.author.id in self.whitelist and self.whitelist[message.author.id]["status"] != "rejected"):
+            if message.author == super().user or (message.author.id in self.whitelist and self.whitelist[message.author.id]["status"] != "rejected"):
                 return
 
             channel = message.channel
 
-            #if server is full
+            # if server is full
             if self.config["whitelists_closed"]:
-                await channel.send("**__Saddly, we have too much players currently, so to guarantee server stability for everyone, "
-                                   "we chose to close the whitelisting process. For more information, check #announcements in our discord server__**")
+                await channel.send(
+                    "**__Saddly, we have too much players currently, so to guarantee server stability for everyone, "
+                    "we chose to close the whitelisting process. For more information, check #announcements in our discord server__**"
+                )
                 return
 
             user = message.author
-            current_user = {"author": {"name": user.display_name,
-                                       "id": user.id,
-                                       "discriminator": user.discriminator},
-                            "status": "pending"}
+            current_user = {"author": {"name": user.display_name, "id": user.id, "discriminator": user.discriminator}, "status": "pending"}
             self.current_users[user.id] = current_user
-            question_list = {
-                "age": {"question": "How old are you? this will only be availiable from staff don't worry",
-                        "type": "integer",
-                        "checks": [lambda x: all([13 <= int(y) <= 99 for y in x])],
-                        "error_checks": ["please write a real age"],
-                        "numbers": 1},
-                "read rules": {"question": "Did you fully read and understood the rules? (availiable in #rules)",
-                               "type": "boolean"},
-                "punishment": {
-                    "question": "Do you agree that, if you ever violate the rules, you will be punished or banned?",
-                    "type": "boolean"},
-                "ban": {
-                    "question": "Did you get ever banned? If yes please explain.",
-                    "type": "free",
-                    "check": None,
-                    "on_check_error": None
-                },
-                "referal": {
-                    "question": "Where did you heard of GT:NH?",
-                    "type": "free",
-                    "check":None,
-                    "on_error_check":None
-                },
-                "personality": {
-                    "question": "Please tell us a bit about yourself __**outside of Minecraft in minimum 3 "
-                                "sentences**__ (hobbies, personality..) ",
-                    "type": "free",
-                    "check": check_3_sentences,
-                    "on_check_error": lambda: asyncio.ensure_future(
-                        channel.send("Looks like your text isn't at least 3 sentences. Friendly reminder: a sentence "
-                                     "starts with a capital letter and ends with a dot."))
-                }
-            }
+
+            def age_check(possible_answers: List[int]) -> bool:
+                if len(possible_answers) != 1:
+                    return False
+
+                return 13 <= int(possible_answers[0]) <= 99
+
+            age = Question(
+                name="age",
+                text="How old are you? this will only be availiable from staff don't worry",
+                question_type=QuestionType.INTEGER,
+                checks=[age_check],
+                on_check_error=lambda _: asyncio.ensure_future(channel.send("Please write a real age.")),
+            )
+
+            read_rules = Question(
+                name="read rules",
+                text="Did you fully read and understood the rules? (availiable in #rules)",
+                question_type=QuestionType.BOOL,
+                checks=None,
+                on_check_error=None,
+            )
+
+            punishment = Question(
+                name="punishment",
+                text="Do you agree that, if you ever violate the rules, you will be punished or banned?",
+                question_type=QuestionType.BOOL,
+                checks=None,
+                on_check_error=None,
+            )
+
+            ban = Question(
+                name="ban", text="Did you get ever banned? If yes please explain.", question_type=QuestionType.FREE, checks=None, on_check_error=None
+            )
+
+            referal = Question(name="referal", text="Where did you heard of GT:NH?", question_type=QuestionType.FREE, checks=None, on_check_error=None)
+
+            personality = Question(
+                name="personality",
+                text="Please tell us a bit about yourself __**outside of Minecraft in minimum 3 sentences**__ (hobbies, personality..) ",
+                question_type=QuestionType.FREE,
+                checks=[check_3_sentences],
+                on_check_error=lambda _: asyncio.ensure_future(
+                    channel.send(
+                        "Looks like your text isn't at least 3 sentences. Friendly reminder: a sentence " "starts with a capital letter and ends with a dot."
+                    )
+                ),
+            )
+
+            question_list: List[Question] = [age, read_rules, punishment, ban, referal, personality]
 
             self.whitelist[user.id] = current_user
             try:
                 current_user["name"], current_user["uuid"] = await self.question_name(channel, user)
 
-                for question_title, question in question_list.items():
+                for question in question_list:
                     await channel.send("Next question:")
-                    if question["type"] == "free":
-                        loop = True
-                        while loop:
-                            text = await self.free_question(question["question"], channel, user)
-                            if question["check"] is None:
-                                loop=False
+                    loop = True
+                    answer: Any
+                    while loop:
+                        if question.question_type == QuestionType.FREE:
+                            answer = await self.free_question(question.text, channel, user)
+                        elif question.question_type == QuestionType.BOOL:
+                            answer = await self.boolean_question(question.text, channel, user)
+                        elif question.question_type == QuestionType.INTEGER:
+                            answer = await self.int_question(question.text, channel, user)
+                        else:
+                            error_msg = f"unknown question type: {question.question_type.value}"
+                            logger.error(error_msg)
+                            raise TypeError(error_msg)
+
+                        if question.checks is None:
+                            loop = False
+                        else:
+                            if False not in [q(answer) for q in question.checks]:
+                                loop = False
                             else:
-                                if question["check"](text):
-                                    loop = False
-                                else:
-                                    await question["on_check_error"]()
+                                if question.on_check_error is not None:
+                                    await question.on_check_error(None)
 
-                        current_user[question_title] = text
-                    elif question["type"] == "boolean":
-                        current_user[question_title] = await self.boolean_question(question["question"], channel, user)
-                    elif question["type"] == "integer":
-                        current_user[question_title] = await self.int_question(question["question"], channel, user,
-                                                                               numbers=question["numbers"],
-                                                                               checks=question["checks"],
-                                                                               error_checks=question["error_checks"])
+                        current_user[question.name] = answer
 
-                    else:
-                        logger.error(f"unknown question type: {question['type']}")
                 current_user["date"] = f"{datetime.datetime.now().strftime('%b %d %Y %H:%M:%S')} GMT+1"
             except asyncio.exceptions.TimeoutError:
                 del self.whitelist[user.id]
-                await channel.send("It has been more than 10 mins since i received any sign of life from you, aborting "
-                                   "the whitelisting process. Resend me a message to start again the whitelisting "
-                                   "process.")
+                await channel.send(
+                    "It has been more than 10 mins since i received any sign of life from you, aborting "
+                    "the whitelisting process. Resend me a message to start again the whitelisting "
+                    "process."
+                )
                 return
 
             embed = self.make_application_embed_pending(current_user)
             await channel.send("this is the application you have made:", embed=embed)
 
             if not current_user["read rules"]:
-                await channel.send("Unfortunately, we require any player to know our rules. "
-                             "Your application will not be transmitted. If this is a mistake, start the whitelisting "
-                             "process again by sending me a new message.")
+                await channel.send(
+                    "Unfortunately, we require any player to know our rules. "
+                    "Your application will not be transmitted. If this is a mistake, start the whitelisting "
+                    "process again by sending me a new message."
+                )
                 del self.whitelist[user.id]
                 return
 
             if not current_user["punishment"]:
-                await channel.send("Unfortunately, you have to accept that breaking a rule have consequences on the server. "
-                             "Your application will not be transmitted. If this is a mistake, start the whitelisting "
-                             "process again by sending me a new message.")
+                await channel.send(
+                    "Unfortunately, you have to accept that breaking a rule have consequences on the server. "
+                    "Your application will not be transmitted. If this is a mistake, start the whitelisting "
+                    "process again by sending me a new message."
+                )
                 del self.whitelist[user.id]
                 return
-
 
             self.whitelist[user.id] = current_user
             await self.send_pending(embed)
             self.whitelist.save_file()
-            await channel.send("Your application has been sent for review. __**Please wait at least 24h before asking "
-                               "about any update on your application. Sometimes we are all busy.**__")
+            await channel.send(
+                "Your application has been sent for review. __**Please wait at least 24h before asking "
+                "about any update on your application. Sometimes we are all busy.**__"
+            )
 
     async def send_pending(self, embed):
         """
