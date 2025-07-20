@@ -99,7 +99,7 @@ class CommandsCog(Cog):
 
     @discord.ext.commands.command(name="block_user")
     @discord.ext.commands.has_role(team_member_role_id)
-    async def _block_user(self, ctx: Context, user_id: str, *reasons: List[str]) -> None:
+    async def _block_user(self, ctx: Context, user_id: str, *reason) -> None:
         """
         command to ban the user from any bot interaction
         :param ctx: context
@@ -115,30 +115,30 @@ class CommandsCog(Cog):
             return
 
         # parse ban reason
-        reason = " ".join(reasons) if len(reasons) > 0 else "no reason given"  # type:ignore
+        reason_message = " ".join(["".join(word) for word in reason]) if len(reason) > 0 else "no reason given"
 
         # edit the internal state of the user in the whitelist
         if converted_user_id in self.bot.whitelist:
             self.bot.whitelist[converted_user_id]["status"] = "blocked"
-            self.bot.whitelist[converted_user_id]["blacklist_reason"] = reason
+            self.bot.whitelist[converted_user_id]["blacklist_reason"] = reason_message
         else:
-            self.bot.whitelist[converted_user_id] = {"status": "blocked", "blacklist_reason": reason}
+            self.bot.whitelist[converted_user_id] = {"status": "blocked", "blacklist_reason": reason_message}
         self.bot.whitelist.save_file()
 
         # send ban confirmation
         user = self.bot.get_user(converted_user_id)
-        await ctx.send(f"user {user.display_name} has been blacklisted from the bot. Reason: {reason}")
+        await ctx.send(f"user {user.display_name} has been blacklisted from the bot. Reason: {reason_message}")
         channel = user.dm_channel
         if channel is None:
             channel = await user.create_dm()
-        await channel.send(f"You have been blacklisted from the bot. Reason: {reason}")
+        await channel.send(f"You have been blacklisted from the bot. Reason: {reason_message}")
 
     @discord.ext.commands.command(name="app_reason")
-    async def _app_rejection(self, ctx: Context, guild_id: str, channel_id: str, message_id: str, *reasons: List[str]) -> None:
+    async def _app_rejection(self, ctx: Context, guild_id: str, channel_id: str, message_id: str, *reason) -> None:
         guild = self.bot.get_guild(int(guild_id))
         channel = guild.get_channel(int(channel_id))
         message = await channel.fetch_message(int(message_id))
-        reason: str = " ".join(reasons)
+        reason_message: str = safify(" ".join(["".join(word) for word in reason]))
         if len(message.embeds) < 0:
             return
         embed = message.embeds[0]
@@ -147,7 +147,7 @@ class CommandsCog(Cog):
             "url": embed.url,
             "footer": embed.footer.text,
             "thumbnail": embed.thumbnail.url,
-            "description": embed.description + f"\n\n__**Staff member**__: {safify(ctx.message.author.display_name)}\n__" f"**Reason**__: {safify(reason)}",
+            "description": embed.description + f"\n\n__**Staff member**__: {safify(ctx.message.author.display_name)}\n__" f"**Reason**__: {reason_message}",
             "author": {"name": embed.author.name, "icon_url": embed.author.icon_url},
         }
         embed = self.bot.make_application_embed_processed(embed_dict)
@@ -158,7 +158,7 @@ class CommandsCog(Cog):
         if channel is None:
             channel = await user.create_dm()
         await channel.send(
-            f"Your application has been rejected for the following reason:`{safify(' '.join(reasons))}`.Feel "  # type:ignore
+            f"Your application has been rejected for the following reason:`{reason_message}`.Feel "  # type:ignore
             f"free to make a new one with the corrected changes"
         )
         await message.delete()
