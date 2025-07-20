@@ -382,7 +382,7 @@ __**Discord id**__: {user_dict["author"]["id"]}
                 text="How old are you? this will only be availiable from staff don't worry",
                 question_type=QuestionType.INTEGER,
                 checks=[age_check],
-                on_check_error=lambda _: asyncio.ensure_future(channel.send("Please write a real age.")),
+                on_check_error=lambda _: asyncio.ensure_future(channel.send("Please write your age, in numerical form, without any other number.")),
             )
 
             read_rules = Question(
