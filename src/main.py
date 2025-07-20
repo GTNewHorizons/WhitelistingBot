@@ -13,8 +13,8 @@ import requests
 from discord import Member, TextChannel, User
 from discord.ext.commands import Bot
 
-from command_cog import CommandsCog
-from question import Question, QuestionType
+from src.command_cog import CommandsCog
+from src.question import Question, QuestionType
 
 logging.basicConfig(filename=Path(__file__).parent / "bot.log", filemode="a", format="%(asctime)s - %(levelname)s - %(name)s - %(message)s", level=logging.INFO)
 
