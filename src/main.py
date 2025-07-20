@@ -2,7 +2,6 @@ import asyncio
 import datetime
 import json
 import logging
-import os
 import re
 import sys
 from pathlib import Path
@@ -16,7 +15,7 @@ from discord.ext.commands import Bot
 from src.command_cog import CommandsCog
 from src.question import Question, QuestionType
 
-logging.basicConfig(filename=Path(__file__).parent / "bot.log", filemode="a", format="%(asctime)s - %(levelname)s - %(name)s - %(message)s", level=logging.INFO)
+logging.basicConfig(filename=Path(__file__).parent.parent / "bot.log", filemode="a", format="%(asctime)s - %(levelname)s - %(name)s - %(message)s", level=logging.INFO)
 
 logging.getLogger().addHandler(logging.StreamHandler())
 logger = logging.getLogger("bot - main")
@@ -158,7 +157,6 @@ class WhitelistedPlayers:
         # load the config file
         self.whitelist = json.load(open(self.file_path, "r"))
         logger.info("already whitelisted players file loaded successfully.")
-        logger.info(self.whitelist)
 
     def create_file(self) -> None:
         """
