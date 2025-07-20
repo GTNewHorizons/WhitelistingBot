@@ -182,8 +182,7 @@ class DiscordBot(Bot):
     """
 
     def __init__(self, *args:Any, **kwargs:Any)->None:
-        intents = discord.Intents.default()
-        intents.members = True
+        intents = discord.Intents.all()
         Bot.__init__(self, command_prefix="!", intents=intents, *args, **kwargs)
         self.config = Config()
         self.whitelist = WhitelistedPlayers()
