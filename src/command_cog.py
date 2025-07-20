@@ -1,11 +1,12 @@
 import json
+import logging
+import os
 import re
 from pathlib import Path
 from typing import Any, List
-import logging
-import os
+
 import discord
-from discord import Embed, Message, RawReactionActionEvent, Member
+from discord import Embed, Member, Message, RawReactionActionEvent
 from discord.ext.commands import Context
 from discord.ext.commands.bot import BotBase
 from discord.ext.commands.cog import Cog
@@ -20,7 +21,6 @@ x = discord.PartialEmoji(name="❌")
 # radioactive = discord.PartialEmoji(name="☢")
 team_member_role_id = 733012839823966328
 stats_path = Path(__file__).parent.parent / "info.json"
-
 
 
 def safify(msg: str) -> str:
@@ -43,7 +43,7 @@ class CommandsCog(Cog):
             await message.add_reaction("❌")
 
     @Cog.listener("on_raw_reaction_add")
-    async def _reaction_listener(self, event:RawReactionActionEvent)->None:
+    async def _reaction_listener(self, event: RawReactionActionEvent) -> None:
         if event.channel_id != self.bot.config["pending_app"]:
             logger.info(f"skipping message reaction, not in pending channel")
             return
@@ -75,7 +75,7 @@ class CommandsCog(Cog):
                 "url": embed.url,
                 "footer": embed.footer.text,
                 "thumbnail": embed.thumbnail.url,
-                "description": embed.description + f"\n\n__**Staff member**__: {safify(event.member.display_name)}", #type:ignore
+                "description": embed.description + f"\n\n__**Staff member**__: {safify(event.member.display_name)}",  # type:ignore
                 "author": {"name": embed.author.name, "icon_url": embed.author.icon_url},
             }
             embed = self.bot.make_application_embed_processed(embed_dict, rejected=False)
@@ -115,7 +115,7 @@ class CommandsCog(Cog):
             return
 
         # parse ban reason
-        reason = " ".join(reasons) if len(reasons) > 0 else "no reason given" #type:ignore
+        reason = " ".join(reasons) if len(reasons) > 0 else "no reason given"  # type:ignore
 
         # edit the internal state of the user in the whitelist
         if converted_user_id in self.bot.whitelist:
@@ -135,12 +135,10 @@ class CommandsCog(Cog):
 
     @discord.ext.commands.command(name="app_reason")
     async def _app_rejection(self, ctx: Context, guild_id: str, channel_id: str, message_id: str, *reasons: List[str]) -> None:
-        # if len(reason) <= 5:
-        #     await ctx.send("reason too short, please elaborate")
-        #     return
         guild = self.bot.get_guild(int(guild_id))
         channel = guild.get_channel(int(channel_id))
         message = await channel.fetch_message(int(message_id))
+        reason: str = " ".join(reasons)
         if len(message.embeds) < 0:
             return
         embed = message.embeds[0]
@@ -149,8 +147,7 @@ class CommandsCog(Cog):
             "url": embed.url,
             "footer": embed.footer.text,
             "thumbnail": embed.thumbnail.url,
-            "description": embed.description + f"\n\n__**Staff member**__: {safify(ctx.message.author.display_name)}\n__"
-            f"**Reason**__: {safify(' '.join(reasons))}", # type: ignore
+            "description": embed.description + f"\n\n__**Staff member**__: {safify(ctx.message.author.display_name)}\n__" f"**Reason**__: {safify(reason)}",
             "author": {"name": embed.author.name, "icon_url": embed.author.icon_url},
         }
         embed = self.bot.make_application_embed_processed(embed_dict)
@@ -161,7 +158,7 @@ class CommandsCog(Cog):
         if channel is None:
             channel = await user.create_dm()
         await channel.send(
-            f"Your application has been rejected for the following reason:`{safify(' '.join(reasons))}`.Feel " #type:ignore
+            f"Your application has been rejected for the following reason:`{safify(' '.join(reasons))}`.Feel "  # type:ignore
             f"free to make a new one with the corrected changes"
         )
         await message.delete()
@@ -171,11 +168,11 @@ class CommandsCog(Cog):
 
     def get_id_from_embed_app(self, embed: Embed) -> str:
         pattern = re.compile("__\*\*Discord id\*\*__: ([0-9]+)")
-        return re.findall(pattern, embed.description)[0] #type:ignore
+        return re.findall(pattern, embed.description)[0]  # type:ignore
 
     def get_username_from_embed_app(self, embed: Embed) -> str:
         pattern = re.compile("__\*\*Minecraft Name\*\*__: (.+)\n\n")
-        return re.findall(pattern, embed.description)[0] #type:ignore
+        return re.findall(pattern, embed.description)[0]  # type:ignore
 
     @discord.ext.commands.command(name="reload_whitelist")
     async def _reload_whitelist(self, ctx: Context) -> None:
@@ -187,9 +184,11 @@ class CommandsCog(Cog):
     @discord.ext.commands.has_role(team_member_role_id)
     async def _member_rank(self, ctx: Context) -> None:
         await ctx.send("generating statistics...")
-        raw_member_list:List[Member] = [m for m in ctx.guild.members if m.joined_at is not None] #type:ignore
-        raw_member_list.sort(key=lambda x: x.joined_at)#type:ignore
-        member_list = [(raw_member_list[i].joined_at.isoformat(), i + 1, raw_member_list[i].name, raw_member_list[i].id) for i in range(len(raw_member_list))] #type:ignore
+        raw_member_list: List[Member] = [m for m in ctx.guild.members if m.joined_at is not None]  # type:ignore
+        raw_member_list.sort(key=lambda x: x.joined_at)  # type:ignore
+        member_list = [
+            (raw_member_list[i].joined_at.isoformat(), i + 1, raw_member_list[i].name, raw_member_list[i].id) for i in range(len(raw_member_list))
+        ]  # type:ignore
         with open(stats_path, "w") as file:
             json.dump(member_list, file)
         await ctx.send("statistics generated.")

@@ -6,24 +6,23 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Any, List, Tuple, Dict
+from typing import Any, Dict, List, Tuple
 
 import discord
 import requests
 from discord import Member, TextChannel, User
 from discord.ext.commands import Bot
 
-from src.question import Question, QuestionType
-from src.command_cog import CommandsCog
-logging.basicConfig(
-    filename=Path(__file__).parent / "bot.log", filemode="a", format="%(asctime)s - %(levelname)s - %(name)s - %(message)s", level=logging.INFO
-)
+from command_cog import CommandsCog
+from question import Question, QuestionType
+
+logging.basicConfig(filename=Path(__file__).parent / "bot.log", filemode="a", format="%(asctime)s - %(levelname)s - %(name)s - %(message)s", level=logging.INFO)
 
 logging.getLogger().addHandler(logging.StreamHandler())
 logger = logging.getLogger("bot - main")
 
 
-def safify(msg:str) -> str:
+def safify(msg: str) -> str:
     return msg.replace("~", "\\~").replace("|", "\\|").replace("*", "\\*").replace("_", "\\_")
 
 
@@ -51,14 +50,14 @@ class Config:
             "whitelists_closed": False,
         }
 
-        self.config:Dict[str, Any] = {}
+        self.config: Dict[str, Any] = {}
 
         self.load_config()
 
-    def __getitem__(self, item:str) -> Any:
+    def __getitem__(self, item: str) -> Any:
         return self.config[item]
 
-    def load_config(self)->None:
+    def load_config(self) -> None:
         """
         Load the config
         :return: None
@@ -98,14 +97,14 @@ class Config:
         self.config = loaded_conf
         logger.info("config loaded successfully.")
 
-    def create_config(self)->None:
+    def create_config(self) -> None:
         """
         write the default config to the config file.
         :return: None
         """
         json.dump(self.base_config, open(self.conf_path, "w"))
 
-    def save_config(self, config:Dict[str, Any])->None:
+    def save_config(self, config: Dict[str, Any]) -> None:
         """
         save the config into the config file.
         :param config: a dict representing the config entries.
@@ -115,38 +114,38 @@ class Config:
 
 
 class WhitelistedPlayers:
-    def __init__(self)->None:
+    def __init__(self) -> None:
         self.file_path = Path(__file__).parent.parent / "whitelisted_players.json"
         self.whitelist: Dict[Any, Any] = dict()
         self.load_file()
 
-    def __getitem__(self, item:Any)->Any:
+    def __getitem__(self, item: Any) -> Any:
         if item is not str:
             item = str(item)
         return self.whitelist[item]
 
-    def __setitem__(self, key:Any, value:Any)->None:
+    def __setitem__(self, key: Any, value: Any) -> None:
         if key is not str:
             key = str(key)
         self.whitelist[key] = value
 
-    def __delitem__(self, key:Any)->None:
+    def __delitem__(self, key: Any) -> None:
         if key is not str:
             key = str(key)
         del self.whitelist[key]
 
-    def __contains__(self, key:Any)->bool:
+    def __contains__(self, key: Any) -> bool:
         if key is not str:
             key = str(key)
         return key in self.whitelist
 
-    def __repr__(self)->str:
+    def __repr__(self) -> str:
         return self.__str__()
 
-    def __str__(self)->str:
+    def __str__(self) -> str:
         return str(self.whitelist)
 
-    def load_file(self)->None:
+    def load_file(self) -> None:
         """
         Load the file
         :return: None
@@ -161,14 +160,14 @@ class WhitelistedPlayers:
         logger.info("already whitelisted players file loaded successfully.")
         logger.info(self.whitelist)
 
-    def create_file(self)->None:
+    def create_file(self) -> None:
         """
         write the default config to the config file.
         :return: None
         """
         json.dump({}, open(self.file_path, "w"))
 
-    def save_file(self)->None:
+    def save_file(self) -> None:
         """
         save the whitelisted players into file.
         :return:
@@ -181,15 +180,14 @@ class DiscordBot(Bot):
     Discord bot written by boubou_19 for the GTNH Team.
     """
 
-    def __init__(self, *args:Any, **kwargs:Any)->None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         intents = discord.Intents.all()
         Bot.__init__(self, command_prefix="!", intents=intents, *args, **kwargs)
         self.config = Config()
         self.whitelist = WhitelistedPlayers()
         self.QUESTIONS = 10
         self.TIMEOUT = 300
-        self.current_users:Dict[Any, Any] = dict()
-
+        self.current_users: Dict[Any, Any] = dict()
 
     async def on_ready(self) -> None:
         """
