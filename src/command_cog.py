@@ -85,7 +85,6 @@ class CommandsCog(Cog):
             await self.bot.send_validated(embed)
             user_id = int(self.get_id_from_embed_app(embed))
             user = self.bot.get_user(user_id)
-            print(user_id)
             channel = user.dm_channel
             self.bot.whitelist[user_id]["status"] = "approved"
             self.bot.whitelist.save_file()
