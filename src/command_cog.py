@@ -2,18 +2,27 @@ import json
 import re
 from pathlib import Path
 from typing import Any, List
-
+import logging
+import os
 import discord
 from discord import Embed, Message, RawReactionActionEvent, Member
 from discord.ext.commands import Context
 from discord.ext.commands.bot import BotBase
 from discord.ext.commands.cog import Cog
 
+logging.basicConfig(
+    filename=Path(os.getcwd()) / ".." / "bot.log", filemode="a", format="%(asctime)s - %(levelname)s - %(name)s - %(message)s", level=logging.INFO
+)
+
+logging.getLogger().addHandler(logging.StreamHandler())
+logger = logging.getLogger("bot - cog")
+
 white_check_mark = discord.PartialEmoji(name="✅")
 x = discord.PartialEmoji(name="❌")
 # radioactive = discord.PartialEmoji(name="☢")
 team_member_role_id = 733012839823966328
 stats_path = Path(__file__).parent.parent / "info.json"
+
 
 
 def safify(msg: str) -> str:
@@ -37,18 +46,27 @@ class CommandsCog(Cog):
 
     @Cog.listener("on_raw_reaction_add")
     async def _reaction_listener(self, event:RawReactionActionEvent)->None:
-        if event.member == self.bot.user or int(event.channel_id) != int(self.bot.config["pending_app"]):
+        if event.channel_id != self.bot.config["pending_app"]:
+            logger.info(f"skipping message reaction, not in pending channel")
             return
+
+        if event.member == self.bot.user:
+            logger.info(f"skipping message reaction, done by the bot")
+            return
+
         message = await self.bot.get_guild(event.guild_id).get_channel(event.channel_id).fetch_message(event.message_id)
         if len(message.embeds) == 0:
+            logger.info("skipping the message reaction, not done on an app")
             return
+
         embed = message.embeds[0]
         if event.emoji == x:
             # if it cannot remove the reaction, ignore it
             try:
                 await message.remove_reaction(x, event.member)
-            except BaseException:
-                pass
+            except BaseException as e:
+                logger.error("something went wrong, skipping the reaction removal")
+                logger.error(e)
 
             cmd = await message.channel.send(f"use `!app_reason {event.guild_id} {event.channel_id} {event.message_id} <reason>` to reject " f"the app")
             await cmd.delete(delay=60)
@@ -79,6 +97,8 @@ class CommandsCog(Cog):
                 "Your application has been approved. You'll be whitelisted shortly. If you cannot join "
                 "despite you received this message, contact a team member."
             )
+        else:
+            logger.warning(f"skipping event reaction, unrecognized emoji: {event.emoji.name}")
 
     @discord.ext.commands.command(name="block_user")
     @discord.ext.commands.has_role(team_member_role_id)
