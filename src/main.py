@@ -320,8 +320,10 @@ __**Discord id**__: {user_dict["author"]["id"]}
         embed = discord.Embed(title=title, url=url, description=description, color=color)
         user = super().get_user(user_dict["author"]["id"])
         assert user
-        assert user.avatar
-        embed.set_author(name=user.name, icon_url=user.avatar.url)
+        if user.avatar is not None:
+            embed.set_author(name=user.name, icon_url=user.avatar.url)
+        else:
+            embed.set_author(name=user.name)
         embed.set_thumbnail(url=f"https://crafthead.net/avatar/{user_dict['uuid'].replace('-', '')}")
         embed.set_footer(text=f"application made the {user_dict['date']}")
         return embed
