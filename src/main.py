@@ -189,7 +189,7 @@ class DiscordBot(Bot):
         self.QUESTIONS = 10
         self.TIMEOUT = 300
         self.current_users:Dict[Any, Any] = dict()
-        self.load_extension("command_cog")
+
 
     async def on_ready(self) -> None:
         """
@@ -201,6 +201,9 @@ class DiscordBot(Bot):
 
         await super().change_presence(activity=discord.Game(activity_text), status=discord.enums.Status.dnd)
         logger.info(f"set activity to {activity_text}.")
+
+        await self.load_extension("command_cog")
+        logger.info("loaded the command_cog cog")
 
     async def question_name(self, channel: discord.abc.Messageable, user: User | Member) -> Tuple[str, str]:
         """
