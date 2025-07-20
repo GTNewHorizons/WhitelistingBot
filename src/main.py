@@ -16,7 +16,7 @@ from discord.ext.commands import Bot
 from src.question import Question, QuestionType
 
 logging.basicConfig(
-    filename=Path(os.getcwd()) / ".." / "bot.log", filemode="a", format="%(asctime)s - %(levelname)s - %(name)s - %(message)s", level=logging.INFO
+    filename=Path(__file__).parent / "bot.log", filemode="a", format="%(asctime)s - %(levelname)s - %(name)s - %(message)s", level=logging.INFO
 )
 
 logging.getLogger().addHandler(logging.StreamHandler())

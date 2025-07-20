@@ -10,9 +10,7 @@ from discord.ext.commands import Context
 from discord.ext.commands.bot import BotBase
 from discord.ext.commands.cog import Cog
 
-logging.basicConfig(
-    filename=Path(os.getcwd()) / ".." / "bot.log", filemode="a", format="%(asctime)s - %(levelname)s - %(name)s - %(message)s", level=logging.INFO
-)
+logging.basicConfig(filename=Path(__file__).parent / "bot.log", filemode="a", format="%(asctime)s - %(levelname)s - %(name)s - %(message)s", level=logging.INFO)
 
 logging.getLogger().addHandler(logging.StreamHandler())
 logger = logging.getLogger("bot - cog")
