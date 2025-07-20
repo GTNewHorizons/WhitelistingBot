@@ -14,7 +14,7 @@ from discord import Member, TextChannel, User
 from discord.ext.commands import Bot
 
 from src.question import Question, QuestionType
-
+from src.command_cog import CommandsCog
 logging.basicConfig(
     filename=Path(__file__).parent / "bot.log", filemode="a", format="%(asctime)s - %(levelname)s - %(name)s - %(message)s", level=logging.INFO
 )
@@ -202,7 +202,7 @@ class DiscordBot(Bot):
         await super().change_presence(activity=discord.Game(activity_text), status=discord.enums.Status.dnd)
         logger.info(f"set activity to {activity_text}.")
 
-        await self.load_extension("command_cog")
+        await self.add_cog(CommandsCog(self))
         logger.info("loaded the command_cog cog")
 
     async def question_name(self, channel: discord.abc.Messageable, user: User | Member) -> Tuple[str, str]:
