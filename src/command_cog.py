@@ -78,18 +78,23 @@ class CommandsCog(Cog):
 
             await self.bot.send_validated(embed)
             user_id = int(self.get_id_from_embed_app(embed))
-            user = self.bot.get_user(user_id)
-            channel = user.dm_channel
+            try:
+                await message.delete()
+            except BaseException as e:
+                logger.error(e)
+            await self.bot.send_whitelist_command(self.get_username_from_embed_app(embed))
             self.bot.whitelist[user_id]["status"] = "approved"
             self.bot.whitelist.save_file()
-            await message.delete()
-            await self.bot.send_whitelist_command(self.get_username_from_embed_app(embed))
-            if channel is None:
-                channel = await user.create_dm()
-            await channel.send(
-                "Your application has been approved. You'll be whitelisted shortly. If you cannot join "
-                "despite you received this message, contact a team member."
-            )
+
+            user = self.bot.get_user(user_id)
+            if user is not None:
+                channel = user.dm_channel
+                if channel is None:
+                    channel = await user.create_dm()
+                await channel.send(
+                    "Your application has been approved. You'll be whitelisted shortly. If you cannot join "
+                    "despite you received this message, contact a team member."
+                )
         else:
             logger.warning(f"skipping event reaction, unrecognized emoji: {event.emoji.name}")
 
@@ -123,11 +128,14 @@ class CommandsCog(Cog):
 
         # send ban confirmation
         user = self.bot.get_user(converted_user_id)
-        await ctx.send(f"user {user.display_name} has been blacklisted from the bot. Reason: {reason_message}")
-        channel = user.dm_channel
-        if channel is None:
-            channel = await user.create_dm()
-        await channel.send(f"You have been blacklisted from the bot. Reason: {reason_message}")
+        if user is not None:
+            await ctx.send(f"user {user.display_name} has been blacklisted from the bot. Reason: {reason_message}")
+            channel = user.dm_channel
+            if channel is None:
+                channel = await user.create_dm()
+            await channel.send(f"You have been blacklisted from the bot. Reason: {reason_message}")
+        else:
+            await ctx.send(f"user {converted_user_id} has been blacklisted from the bot. Reason: {reason_message}")
 
     @discord.ext.commands.command(name="app_reason")
     async def _app_rejection(self, ctx: Context, guild_id: str, channel_id: str, message_id: str, *reason) -> None:
@@ -149,17 +157,18 @@ class CommandsCog(Cog):
         embed = self.bot.make_application_embed_processed(embed_dict)
         await self.bot.send_rejected(embed)
         user_id = int(self.get_id_from_embed_app(embed))
-        user = self.bot.get_user(user_id)
-        channel = user.dm_channel
-        if channel is None:
-            channel = await user.create_dm()
-        await channel.send(
-            f"Your application has been rejected for the following reason:`{reason_message}`.Feel "  # type:ignore
-            f"free to make a new one with the corrected changes"
-        )
-        await message.delete()
         self.bot.whitelist[user_id]["status"] = "rejected"
         self.bot.whitelist.save_file()
+        user = self.bot.get_user(user_id)
+        if user is not None:
+            channel = user.dm_channel
+            if channel is None:
+                channel = await user.create_dm()
+            await channel.send(
+                f"Your application has been rejected for the following reason:`{reason_message}`.Feel "  # type:ignore
+                f"free to make a new one with the corrected changes"
+            )
+        await message.delete()
         await ctx.message.delete()
 
     def get_id_from_embed_app(self, embed: Embed) -> str:
