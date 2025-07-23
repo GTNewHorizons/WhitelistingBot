@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Tuple
 
 import discord
 import requests
-from discord import Member, TextChannel, User
+from discord import Member, TextChannel, User, DiscordServerError
 from discord.ext.commands import Bot
 
 from src.command_cog import CommandsCog
@@ -464,6 +464,8 @@ __**Discord id**__: {user_dict["author"]["id"]}
                         "process."
                     )
                 return
+            except DiscordServerError:
+                del self.whitelist[user.id]
 
             embed = self.make_application_embed_pending(current_user)
             await channel.send("this is the application you have made:", embed=embed)
